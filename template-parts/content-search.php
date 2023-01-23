@@ -10,7 +10,31 @@
 ?>
 
 <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
-	<header class="entry-header">
+<?php
+
+    echo ''
+        . '<div class="mithun-card-hover">'
+            . '<div class="row g-0">'
+                . '<div class="col-md-4 d-flex m-auto" style="justify-content:center; align-items:center;">'
+                     . '<img src="' . get_the_post_thumbnail_url() . '" alt="...">'
+                . '</div>'
+                . '<div class="col-md-8">'
+                    . '<div class="card-body">'
+                        . '<h5 class="card-title"><a href="' . esc_url(get_permalink()) . '" rel="bookmark" class="text-decoration-none text-success">'
+                            . get_the_title()
+                        . '</a></h5>';
+                           if ( 'post' === get_post_type() ){
+                                echo '<p class="card-text"><small class="text-muted">' . (_s_posted_on()) . (_s_posted_by()) . '</small></p>' ;
+                            }
+                echo    '<p class="card-text">' . get_the_excerpt() . '</p>'
+                        . '<p class="card-text"><small class="text-muted">' . (_s_entry_footer()) . '</small></p>'
+                    . '</div>'
+                . '</div>'
+            . '</div>'
+        . '</div>' ;
+  ?>
+
+<!--	<header class="entry-header">
 		<?php the_title( sprintf( '<h2 class="entry-title"><a href="%s" rel="bookmark">', esc_url( get_permalink() ) ), '</a></h2>' ); ?>
 
 		<?php if ( 'post' === get_post_type() ) : ?>
@@ -19,17 +43,17 @@
 			_s_posted_on();
 			_s_posted_by();
 			?>
-		</div><!-- .entry-meta -->
-		<?php endif; ?>
-	</header><!-- .entry-header -->
+<!--		</div><!-- .entry-meta -->
+<!--		<?php endif; ?>
+<!--	</header><!-- .entry-header -->
 
-	<?php _s_post_thumbnail(); ?>
+<!--	<?php _s_post_thumbnail(); ?>
 
 	<div class="entry-summary">
 		<?php the_excerpt(); ?>
-	</div><!-- .entry-summary -->
+<!--	</div><!-- .entry-summary -->
 
-	<footer class="entry-footer">
+<!--	<footer class="entry-footer">
 		<?php _s_entry_footer(); ?>
-	</footer><!-- .entry-footer -->
+<!--	</footer><!-- .entry-footer -->
 </article><!-- #post-<?php the_ID(); ?> -->

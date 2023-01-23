@@ -50,7 +50,8 @@ if ( ! function_exists( '_s_setup' ) ) :
 		// This theme uses wp_nav_menu() in one location.
 		register_nav_menus(
 			array(
-				'menu-1' => esc_html__( 'Primary', '_s' ),
+				'menu-1' => esc_html__( 'Primary Menu', '_s' ),
+				'menu-2' => esc_html__( 'Secondary Menu', '_s' ),
 			)
 		);
 
@@ -140,11 +141,17 @@ add_action( 'widgets_init', '_s_widgets_init' );
  * Enqueue scripts and styles.
  */
 function _s_scripts() {
+
+	// Adding Bootstrap and fontawesome to the Theme.
+	wp_enqueue_style( 'bootstrap-style', get_template_directory_uri() . '/bootstrap/css/bootstrap.min.css', array(), _S_VERSION );
+	wp_enqueue_style( 'bootstrapicon-style', get_template_directory_uri() . '/icons/font/bootstrap-icons.css', array(), _S_VERSION );
+	wp_enqueue_script( 'bootstrap-js', get_template_directory_uri() . '/bootstrap/js/bootstrap.bundle.min.js', array( 'jquery' ), _S_VERSION, true );
+	// Adding Bootstrap to the Theme - End.
+
 	wp_enqueue_style( '_s-style', get_stylesheet_uri(), array(), _S_VERSION );
 	wp_style_add_data( '_s-style', 'rtl', 'replace' );
 
-	wp_enqueue_script( '_s-navigation', get_template_directory_uri() . '/js/navigation.js', array(), _S_VERSION, true );
-
+	wp_enqueue_script( '_s-coverflow-carousel', get_template_directory_uri() . '/js/carousel.js', array(), _S_VERSION, true );
 	if ( is_singular() && comments_open() && get_option( 'thread_comments' ) ) {
 		wp_enqueue_script( 'comment-reply' );
 	}
@@ -183,4 +190,184 @@ if ( defined( 'JETPACK__VERSION' ) ) {
  */
 if ( class_exists( 'WooCommerce' ) ) {
 	require get_template_directory() . '/inc/woocommerce.php';
+}
+
+
+
+/**
+ * Custom Code added here
+ */
+
+
+
+/**
+ * Register Custom Navigation Walker
+ *
+ * Introduced in version 1.1
+ */
+function register_navwalker() {
+
+	if ( ! file_exists( get_template_directory() . '/inc/class-wp-bootstrap-navwalker.php' ) ) {
+		// File does not exist... return an error.
+		return new WP_Error( 'class-wp-bootstrap-navwalker-missing', __( 'It appears the class-wp-bootstrap-navwalker.php file may be missing.', 'wp-bootstrap-navwalker' ) );
+	} else {
+		// File exists... require it.
+		require_once get_template_directory() . '/inc/class-wp-bootstrap-navwalker.php';
+	}
+
+}
+add_action( 'after_setup_theme', 'register_navwalker' );
+
+add_filter( 'nav_menu_link_attributes', 'prefix_bs5_dropdown_data_attribute', 20, 3 );
+/**
+ * Use namespaced data attribute for Bootstrap's dropdown toggles.
+ *
+ * @param array    $atts HTML attributes applied to the item's `<a>` element.
+ * @param WP_Post  $item The current menu item.
+ * @param stdClass $args An object of wp_nav_menu() arguments.
+ * @return array
+ */
+function prefix_bs5_dropdown_data_attribute( $atts, $item, $args ) {
+	if ( is_a( $args->walker, 'WP_Bootstrap_Navwalker' ) ) {
+		if ( array_key_exists( 'data-toggle', $atts ) ) {
+			unset( $atts['data-toggle'] );
+			$atts['data-bs-toggle'] = 'dropdown';
+		}
+	}
+	return $atts;
+}
+
+
+/**
+* Added since 1.0.1 get search form in the navbar
+*/
+if ( ! function_exists( 'add_search_box' ) ) {
+
+	/**
+	 * Adds custom search box.
+	 *
+	 * @param string $items html string for search box.
+	 * @param object $args  stdClass object.
+	 * @return string.
+	 */
+	function add_search_box( $items, $args ) {
+		if ( 'menu-1' === $args->theme_location ) {
+			ob_start();
+			get_search_form();
+			$searchform = ob_get_contents();
+			ob_end_clean();
+
+			$items .= '<li id="menu-item-search">' . $searchform . '</li>';
+
+			return $items;
+		} else {
+			return $items;
+		}
+	}
+	add_filter( 'wp_nav_menu_items', 'add_search_box', 10, 2 );
+}
+
+
+/**
+ * Custom Post to add content to home page
+ */
+add_action( 'init', 'custom_homepage_post' );
+
+/**
+ * Register a Custom post type for.
+ */
+function custom_homepage_post() {
+	$labels = array(
+		'name'               => _x( 'Homepage Sections', 'post type general name' ),
+		'singular_name'      => _x( 'Homepage', 'post type singular name' ),
+		'menu_name'          => _x( 'Homepage Sections', 'admin menu' ),
+		'name_admin_bar'     => _x( 'Homepage', 'add new on admin bar' ),
+		'add_new'            => _x( 'Add New', 'Homepage' ),
+		'add_new_item'       => __( 'Name' ),
+		'new_item'           => __( 'New Section' ),
+		'edit_item'          => __( 'Edit Section' ),
+		'view_item'          => __( 'View Section' ),
+		'all_items'          => __( 'All Sections' ),
+		'featured_image'     => __( 'Featured Image', 'text_domain' ),
+		'search_items'       => __( 'Search Section' ),
+		'parent_item_colon'  => __( 'Parent Section:' ),
+		'not_found'          => __( 'No content found.' ),
+		'not_found_in_trash' => __( 'No content found in Trash.' ),
+	);
+
+	$args = array(
+		'labels'              => $labels,
+		'menu_icon'           => 'dashicons-format-gallery',
+		'description'         => __( 'Description.' ),
+		'public'              => false,
+		'publicly_queryable'  => false,
+		'show_ui'             => true,
+		'show_in_menu'        => true,
+		'query_var'           => true,
+		'rewrite'             => true,
+		'capability_type'     => 'post',
+		'has_archive'         => false,
+		'hierarchical'        => true,
+		'menu_position'       => null,
+		'exclude_from_search' => true,
+		'supports'            => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields' ),
+	);
+
+	register_post_type( 'section', $args );
+}
+
+
+/**
+ * For Multiple featured images
+ */
+
+if ( class_exists( 'MultiPostThumbnails' ) ) {
+	$types = array( 'post', 'page', 'section' );
+	foreach ( $types as $p_type ) {
+		new MultiPostThumbnails(
+			array(
+				// Replace [YOUR THEME TEXT DOMAIN] below with the text domain of your theme (found in the theme's `style.css`).
+				'label'     => __( 'Secondary Image', '_s' ),
+				'id'        => 'secondary-image',
+				'post_type' => $p_type,
+			)
+		);
+	}
+}
+
+
+if ( ! function_exists( 'mithun_attachment_fields_to_edit' ) ) {
+	/**
+	 * Adds image number metabox to the media details
+	 *
+	 * @param array  $form_fields Array of fields of a custom post.
+	 * @param object $post       WP_Post object.
+	 * @return array
+	 */
+	function mithun_attachment_fields_to_edit( $form_fields, $post ) {
+		$form_fields['image_number'] = array(
+			'label' => __( 'Image Number' ),
+			'input' => 'text', // this is default if "input" is omitted.
+			'value' => get_post_meta( $post->ID, '_image_number', true ),
+		);
+		return $form_fields;
+	}
+	add_filter( 'attachment_fields_to_edit', 'mithun_attachment_fields_to_edit', null, 2 );
+}
+
+if ( ! function_exists( 'mithun_attachment_fields_to_save' ) ) {
+	/**
+	 * Filters the attachment fields to be saved.
+	 *
+	 * @param array $post       An array of post data.
+	 * @param array $attachment An array of attachment metadata.
+	 * @return array
+	 */
+	function mithun_attachment_fields_to_save( $post, $attachment ) {
+		if ( isset( $attachment['image_number'] ) ) {
+			update_post_meta( $post['ID'], '_image_number', $attachment['image_number'] );
+		}
+		return $post;
+	}
+	add_filter( 'attachment_fields_to_save', 'mithun_attachment_fields_to_save', null, 2 );
 }
